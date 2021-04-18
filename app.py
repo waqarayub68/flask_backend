@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 import pandas as pd
 import numpy as np
 from flask_sqlalchemy import SQLAlchemy
@@ -117,6 +118,7 @@ Cleaned_COVIDFrame = COVIDX[mask3]
 
 
 app = Flask(__name__)
+CORS(app)
 
 import json
 from json import JSONEncoder
@@ -138,6 +140,19 @@ class COVIDENTRY(db.Model):
         self.deaths = deaths
         self.country = country
         self.date = date
+    
+    def serialize(self):
+        return {
+            "id": self.id,
+            "deaths": self.deaths,
+            "confirm": self.confirm,
+            "date": str(self.date),
+            "country": self.country
+        }
+
+    @staticmethod
+    def serialize_list(l):
+        return [m.serialize() for m in l]
 
     def __repr__(self):
         return '<User %>' % self.name
@@ -203,7 +218,26 @@ def getUser():
     except Exception as e:
         return (str(e))
 
+# Countries for Drop Down
+@app.route('/get-covid-countries', methods=["GET"])
+def getCovidCountries():
+    try:
+        covidentry = COVIDENTRY.query.with_entities(COVIDENTRY.country).filter(COVIDENTRY.confirm > 0).distinct(COVIDENTRY.country)
+        countries = []
+        for i in covidentry:
+            countries.append(i.country)
+        return jsonify({"countries": countries})
+    except Exception as e:
+        return (str(e))
 
+
+
+# Get Paramters
+# @app.route('/get-parameter')
+# def getParameter():
+#     # return parameter + " " + optional_parameter
+#     print(request.args.to_dict())
+#     return jsonify(request.args.to_dict())
 
 
 # @app.route('/')
@@ -259,4 +293,4 @@ def getUser():
 
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=80, debug=True)
+    app.run(host="127.0.0.1", port=8080, debug=True)
