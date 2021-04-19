@@ -3,6 +3,7 @@ from flask_cors import CORS
 import pandas as pd
 import numpy as np
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import func
 pd.set_option('max_rows', 10)
 pd.plotting.register_matplotlib_converters()
 
@@ -226,7 +227,24 @@ def getCovidCountries():
         countries = []
         for i in covidentry:
             countries.append(i.country)
+        print(len(countries))
         return jsonify({"countries": countries})
+    except Exception as e:
+        return (str(e))
+
+# Countries for Drop Down
+@app.route('/get-bar-chart-values', methods=["GET"])
+def getAreaChartValues():
+    try:
+        covidentry = COVIDENTRY.query.with_entities(COVIDENTRY.country, func.sum(COVIDENTRY.confirm).label('totalConfirm'), func.sum(COVIDENTRY.deaths).label('totalDeaths')).group_by(COVIDENTRY.country).all()
+        countriesStats = []
+        for i in covidentry:
+            countriesStats.append({
+                "Country": i[0],
+                "ConfirmCases": i[1],
+                "ConfirmDeaths": i[2]
+            })
+        return jsonify({"barStats": countriesStats})
     except Exception as e:
         return (str(e))
 
